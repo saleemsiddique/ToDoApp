@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+List<Task> tasks = [];
 void main() => runApp(ToDoApp());
 
 class ToDoApp extends StatelessWidget {
@@ -26,32 +27,75 @@ class _ToDoListScreen extends State<ToDoListScreen> {
         ),
         actions: [
           IconButton(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final newTask = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => createTaskScreen()));
+                        builder: (context) => createTaskScreen())   
+                        );
+              if (newTask != null) {
+                setState(() {
+                  tasks.add(newTask);
+                });
+              }        
+                        
               },
-              icon: Icon(Icons.add))
+              icon: Icon(Icons.add)),
+              
         ],
       ),
       body: ListView.separated(
         padding: const EdgeInsets.all(10),
-        itemCount: 2,
+        itemCount: tasks.length,
         itemBuilder: (BuildContext context, int index) {
-          return Container(
-            height: 50,
-            color: Colors.black,
-            child: Center(child: Text('Entry')),
-          );
-        },
-        separatorBuilder: (BuildContext context, int index) => const Divider(),
+          final task = tasks[index];
+          return Dismissible(
+        key: Key(task.name), // Debe ser único para cada elemento
+        onDismissed: (direction) {
+        setState(() {
+          tasks.removeAt(index);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tarea eliminada'),
+          ),
+        );
+      },
+      background: Container(
+        color: Colors.red, // Color de fondo al deslizar
+        alignment: Alignment.centerLeft,
+        child: Icon(Icons.delete, color: Colors.white),
       ),
+      child: Container( // Wrap the ListTile with a Container
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey), // Apply border
+          borderRadius: BorderRadius.circular(8.0), // Add border radius for a rounded look
+        ),
+      child: ListTile(
+        
+        title: Text(task.name),
+        subtitle: Text(task.description),
+      ),
+    ));
+  },
+  separatorBuilder: (BuildContext context, int index) => const Divider(),
+)
     );
   }
 }
 
-class createTaskScreen extends StatelessWidget {
+class createTaskScreen extends StatefulWidget {
+  @override
+  _createTaskScreen createState() => _createTaskScreen();
+}
+
+class _createTaskScreen extends State<createTaskScreen> {
+
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _descriptionController = TextEditingController();
+  String newName = "";
+  String newDescription = "";
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,6 +109,7 @@ class createTaskScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextFormField(
+                controller: _nameController,
                 decoration: InputDecoration(
                   labelText: "Name of Task",
                 ),
@@ -74,6 +119,7 @@ class createTaskScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextFormField(
+                controller: _descriptionController,
                 maxLines: 1,
                 decoration: InputDecoration(
                   labelText: "Task at hand",
@@ -85,12 +131,14 @@ class createTaskScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  newName = _nameController.text;
+                  newDescription = _descriptionController.text;
+                  final newTask = Task(newName, newDescription);
+                  Navigator.pop(context, newTask);
                 }, 
                 child: Text("Submit"),
               ),
             )
-            // You can add more text fields here if needed
           ],
         ),
       ),
